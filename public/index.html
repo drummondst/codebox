@@ -287,32 +287,6 @@
       <div class="status-display">
         <div class="status-text" id="statusText">WAITING FOR CODE</div>
       </div>
-
-      <span class="input-label">Enter 4-Digit Code</span>
-      <div class="input-row">
-        <input
-          type="text"
-          class="code-input"
-          id="codeInput"
-          maxlength="4"
-          placeholder="0000"
-          autocomplete="off"
-          inputmode="numeric"
-          pattern="\d{4}"
-        />
-        <button class="submit-btn" id="submitBtn" onclick="submitCode()">SUBMIT</button>
-      </div>
-      <div class="attempts" id="attemptsText"></div>
-
-      <div class="api-block">
-        <span class="api-label">API Endpoint</span>
-        <div class="api-code"><span class="method">POST</span> /check
-Content-Type: application/json
-
-{ <span class="key">"code"</span>: <span class="val">"1234"</span> }
-
-→ { <span class="key">"result"</span>: <span class="val">"win"</span> | <span class="val">"nope"</span> }</div>
-      </div>
     </div>
   </div>
 
