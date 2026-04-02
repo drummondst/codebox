@@ -156,119 +156,17 @@
       50% { text-shadow: 0 0 40px var(--green), 0 0 80px rgba(0,255,106,0.7), 0 0 120px rgba(0,255,106,0.3); }
     }
 
-    /* Input section */
-    .input-label {
-      font-size: 9px;
-      letter-spacing: 0.3em;
-      color: var(--muted);
-      text-transform: uppercase;
-      margin-bottom: 10px;
-      display: block;
+    @keyframes win-flash {
+      0%   { background: var(--panel); }
+      20%  { background: rgba(0,255,106,0.18); }
+      40%  { background: var(--panel); }
+      60%  { background: rgba(0,255,106,0.18); }
+      80%  { background: var(--panel); }
+      100% { background: rgba(0,255,106,0.07); }
     }
 
-    .input-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .code-input {
-      flex: 1;
-      background: #050705;
-      border: 1px solid var(--border);
-      color: var(--green);
-      font-family: var(--font-display);
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 0.3em;
-      text-align: center;
-      padding: 12px 8px;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      /* Hide arrows */
-      -moz-appearance: textfield;
-    }
-    .code-input::-webkit-outer-spin-button,
-    .code-input::-webkit-inner-spin-button { -webkit-appearance: none; }
-
-    .code-input:focus {
-      border-color: var(--green-dim);
-      box-shadow: 0 0 12px var(--green-glow), inset 0 0 8px rgba(0,255,106,0.05);
-    }
-
-    .code-input::placeholder { color: var(--muted); letter-spacing: 0.2em; }
-
-    .submit-btn {
-      background: transparent;
-      border: 1px solid var(--green-dim);
-      color: var(--green);
-      font-family: var(--font-display);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.2em;
-      padding: 12px 18px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .submit-btn:hover {
-      background: var(--green-glow);
-      border-color: var(--green);
-      box-shadow: 0 0 16px var(--green-glow);
-    }
-
-    .submit-btn:active { transform: scale(0.97); }
-    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-    /* API info */
-    .api-block {
-      border-top: 1px solid var(--border);
-      padding-top: 20px;
-      margin-top: 8px;
-    }
-
-    .api-label {
-      font-size: 9px;
-      letter-spacing: 0.3em;
-      color: var(--muted);
-      text-transform: uppercase;
-      margin-bottom: 10px;
-      display: block;
-    }
-
-    .api-code {
-      background: #050705;
-      border: 1px solid var(--border);
-      border-left: 2px solid var(--muted);
-      padding: 12px 14px;
-      font-size: 11px;
-      color: #5a8a5a;
-      line-height: 1.7;
-      overflow-x: auto;
-      white-space: pre;
-    }
-
-    .api-code .method { color: var(--amber); }
-    .api-code .key { color: var(--green-dim); }
-    .api-code .val { color: #7ab87a; }
-
-    /* Flash animation */
-    @keyframes flash {
-      0% { opacity: 1; }
-      50% { opacity: 0.4; }
-      100% { opacity: 1; }
-    }
-
-    .flashing { animation: flash 0.15s ease 3; }
-
-    .attempts {
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 0.15em;
-      text-align: right;
-      margin-top: 6px;
+    .panel.win-flash {
+      animation: win-flash 0.8s ease forwards;
     }
   </style>
 </head>
@@ -281,7 +179,7 @@
 
     <div class="panel">
       <div class="header">
-        <div class="logo">SECURE TERMINAL // v1.6</div>
+        <div class="logo">SECURE TERMINAL // v1.0</div>
       </div>
 
       <div class="status-display">
@@ -291,75 +189,27 @@
   </div>
 
   <script>
-    const input = document.getElementById('codeInput');
     const statusText = document.getElementById('statusText');
-    const submitBtn = document.getElementById('submitBtn');
-    const attemptsEl = document.getElementById('attemptsText');
-    let attempts = 0;
+    const panel = document.querySelector('.panel');
 
-    // Only allow digits
-    input.addEventListener('input', () => {
-      input.value = input.value.replace(/\D/g, '').slice(0, 4);
+    // Listen for server-sent events so the page updates instantly when /check is hit
+    const evtSource = new EventSource('/events');
+
+    evtSource.addEventListener('win', () => {
+      setStatus('YOU WIN!', 'win');
+      panel.classList.remove('win-flash');
+      void panel.offsetWidth; // reflow to retrigger
+      panel.classList.add('win-flash');
     });
 
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') submitCode();
+    evtSource.addEventListener('nope', () => {
+      setStatus('NOPE', 'nope');
+      setTimeout(() => setStatus('WAITING FOR CODE', ''), 2000);
     });
-
-    async function submitCode() {
-      const code = input.value.trim();
-      if (!/^\d{4}$/.test(code)) {
-        flash();
-        return;
-      }
-
-      submitBtn.disabled = true;
-      input.disabled = true;
-
-      try {
-        const res = await fetch('/check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code })
-        });
-        const data = await res.json();
-
-        attempts++;
-        attemptsEl.textContent = `ATTEMPTS: ${attempts}`;
-
-        if (data.result === 'win') {
-          setStatus('YOU WIN!', 'win');
-          submitBtn.disabled = true;
-          input.disabled = true;
-          return; // keep locked on win
-        } else {
-          setStatus('NOPE', 'nope');
-          setTimeout(() => {
-            setStatus('WAITING FOR CODE', '');
-            input.value = '';
-            input.disabled = false;
-            submitBtn.disabled = false;
-            input.focus();
-          }, 1800);
-        }
-      } catch (err) {
-        setStatus('ERROR', 'nope');
-        setTimeout(() => {
-          setStatus('WAITING FOR CODE', '');
-          input.disabled = false;
-          submitBtn.disabled = false;
-        }, 1800);
-      }
-    }
 
     function setStatus(text, cls) {
-      statusText.className = 'status-text ' + cls;
+      statusText.className = 'status-text ' + (cls || '');
       statusText.textContent = text;
-    }
-
-    function flash() {
-      statusText.classList.add('flashing');
-      setTimeout(() => statusText.classList.remove('flashing'), 500);
     }
   </script>
 </body>

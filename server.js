@@ -5,9 +5,29 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// The secret 4-digit code - change this!
 const SECRET_CODE = process.env.SECRET_CODE || '1337';
 
+// Keep track of all connected browser clients
+const clients = new Set();
+
+// SSE endpoint — browsers connect here to receive live updates
+app.get('/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  clients.add(res);
+  req.on('close', () => clients.delete(res));
+});
+
+function broadcast(event) {
+  for (const client of clients) {
+    client.write(`event: ${event}\ndata: {}\n\n`);
+  }
+}
+
+// The endpoint your external service hits
 app.post('/check', (req, res) => {
   const { code } = req.body;
 
@@ -16,8 +36,10 @@ app.post('/check', (req, res) => {
   }
 
   if (code === SECRET_CODE) {
+    broadcast('win');
     return res.json({ result: 'win' });
   } else {
+    broadcast('nope');
     return res.json({ result: 'nope' });
   }
 });
