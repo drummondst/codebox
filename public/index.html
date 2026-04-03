@@ -139,9 +139,9 @@
       font-family: var(--font-display);
       font-size: clamp(60px, 13vw, 108px);
       font-weight: 900;
-      color: var(--green);
+      color: var(--amber);
       letter-spacing: 0.06em;
-      text-shadow: 0 0 30px var(--green), 0 0 60px rgba(0,255,106,0.35);
+      text-shadow: 0 0 30px var(--amber), 0 0 60px rgba(255,184,0,0.35);
       line-height: 1;
       transition: color 0.5s, text-shadow 0.5s;
     }
@@ -151,10 +151,21 @@
       text-shadow: 0 0 30px var(--amber), 0 0 60px rgba(255,184,0,0.35);
     }
 
+    .countdown.red {
+      color: var(--red);
+      text-shadow: 0 0 30px var(--red), 0 0 60px rgba(255,60,60,0.35);
+    }
+
     .countdown.danger {
       color: var(--red);
       text-shadow: 0 0 30px var(--red), 0 0 60px rgba(255,60,60,0.35);
       animation: blink 1s step-end infinite;
+    }
+
+    .countdown.won {
+      color: var(--green);
+      text-shadow: 0 0 30px var(--green), 0 0 60px rgba(0,255,106,0.5);
+      animation: none;
     }
 
     @keyframes blink {
@@ -311,8 +322,8 @@
       const s = secondsLeft % 60;
       countdownEl.textContent = `${h}:${pad(m)}:${pad(s)}`;
       if      (secondsLeft <= 300) countdownEl.className = 'countdown danger';
-      else if (secondsLeft <= 600) countdownEl.className = 'countdown warning';
-      else                         countdownEl.className = 'countdown';
+      else if (secondsLeft <= 600) countdownEl.className = 'countdown red';
+      else                         countdownEl.className = 'countdown warning';
     }
 
     function pad(n) { return String(n).padStart(2, '0'); }
@@ -321,6 +332,7 @@
       const evtSource = new EventSource('/events');
       evtSource.addEventListener('win', () => {
         clearInterval(timerInterval);
+        countdownEl.className = 'countdown won';
         setStatus('YOU WIN!', 'win');
         panel.classList.remove('win-flash');
         void panel.offsetWidth;
