@@ -330,6 +330,7 @@
 
     function connectSSE() {
       const evtSource = new EventSource('/events');
+
       evtSource.addEventListener('win', () => {
         clearInterval(timerInterval);
         countdownEl.className = 'countdown won';
@@ -338,10 +339,32 @@
         void panel.offsetWidth;
         panel.classList.add('win-flash');
       });
+
       evtSource.addEventListener('nope', () => {
         setStatus('NOPE', 'nope');
         setTimeout(() => setStatus('WAITING FOR CODE', ''), 2000);
       });
+
+      evtSource.addEventListener('timer-restart', () => {
+        resetTimer(3600);
+      });
+
+      evtSource.addEventListener('timer-set', (e) => {
+        const data = JSON.parse(e.data);
+        resetTimer(data.seconds);
+      });
+    }
+
+    function resetTimer(secs) {
+      clearInterval(timerInterval);
+      secondsLeft = secs;
+      renderCountdown();
+      timerInterval = setInterval(() => {
+        if (secondsLeft > 0) secondsLeft--;
+        renderCountdown();
+      }, 1000);
+      // Also reset status if a new timer is set
+      setStatus('WAITING FOR CODE', '');
     }
 
     function setStatus(text, cls) {

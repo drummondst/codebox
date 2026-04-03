@@ -4,6 +4,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - SECRET_CODE=1337   # Change this to your secret code!
+      - SECRET_CODE=0411   # Change this to your secret code!
       - PORT=3000
     restart: unless-stopped

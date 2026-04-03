@@ -5,29 +5,33 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const SECRET_CODE = process.env.SECRET_CODE || '1337';
+const SECRET_CODE = process.env.SECRET_CODE || '0411';
 
-// Keep track of all connected browser clients
 const clients = new Set();
 
-// SSE endpoint — browsers connect here to receive live updates
+// SSE endpoint
 app.get('/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
+  const heartbeat = setInterval(() => res.write(': ping\n\n'), 25000);
   clients.add(res);
-  req.on('close', () => clients.delete(res));
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    clients.delete(res);
+  });
 });
 
-function broadcast(event) {
+function broadcast(event, data = {}) {
+  const payload = JSON.stringify(data);
   for (const client of clients) {
-    client.write(`event: ${event}\ndata: {}\n\n`);
+    client.write(`event: ${event}\ndata: ${payload}\n\n`);
   }
 }
 
-// The endpoint your external service hits
+// Check the secret code
 app.post('/check', (req, res) => {
   const { code } = req.body;
 
@@ -42,6 +46,30 @@ app.post('/check', (req, res) => {
     broadcast('nope');
     return res.json({ result: 'nope' });
   }
+});
+
+// Restart the timer (resets to 1 hour)
+app.post('/timer/restart', (req, res) => {
+  broadcast('timer-restart', { seconds: 3600 });
+  return res.json({ result: 'ok', seconds: 3600 });
+});
+
+// Set timer to a custom duration and start it
+// Body: { seconds: 1800 }  OR  { minutes: 30 }  OR  { hours: 1, minutes: 30 }
+app.post('/timer/set', (req, res) => {
+  const { seconds, minutes, hours } = req.body;
+
+  let totalSeconds = 0;
+  if (typeof seconds === 'number') totalSeconds += seconds;
+  if (typeof minutes === 'number') totalSeconds += minutes * 60;
+  if (typeof hours   === 'number') totalSeconds += hours   * 3600;
+
+  if (totalSeconds <= 0) {
+    return res.status(400).json({ result: 'error', message: 'Provide seconds, minutes, and/or hours > 0' });
+  }
+
+  broadcast('timer-set', { seconds: totalSeconds });
+  return res.json({ result: 'ok', seconds: totalSeconds });
 });
 
 const PORT = process.env.PORT || 3000;
