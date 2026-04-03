@@ -318,7 +318,7 @@
       window.addEventListener('resize', resizeFW);
       fwParticles = [];
       let bursts = 0;
-      const maxBursts = 300;
+      const maxBursts = 28;
       function scheduleBurst() {
         if (bursts >= maxBursts) return;
         burst();
@@ -445,6 +445,8 @@
         void panel.offsetWidth;
         panel.classList.add('win-flash');
         launchFireworks();
+        const audio = new Audio('/song.mp3');
+        audio.play().catch(() => {}); // catch autoplay block silently
       });
 
       evtSource.addEventListener('nope', () => {

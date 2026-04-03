@@ -5,6 +5,11 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve song.mp3 from the project root
+app.get('/song.mp3', (req, res) => {
+  res.sendFile(path.join(__dirname, 'song.mp3'));
+});
+
 const SECRET_CODE = process.env.SECRET_CODE || '0411';
 
 const clients = new Set();
