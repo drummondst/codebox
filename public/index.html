@@ -137,7 +137,7 @@
 
     .countdown {
       font-family: var(--font-display);
-      font-size: clamp(60px, 13vw, 108px);
+      font-size: clamp(80px, 18vw, 160px);
       font-weight: 900;
       color: var(--amber);
       letter-spacing: 0.06em;
@@ -310,10 +310,7 @@
       document.getElementById('gameScreen').classList.remove('hidden');
       connectSSE();
       renderCountdown();
-      timerInterval = setInterval(() => {
-        if (secondsLeft > 0) secondsLeft--;
-        renderCountdown();
-      }, 1000);
+      startTimer();
     }
 
     function renderCountdown() {
@@ -321,9 +318,22 @@
       const m = Math.floor((secondsLeft % 3600) / 60);
       const s = secondsLeft % 60;
       countdownEl.textContent = `${h}:${pad(m)}:${pad(s)}`;
-      if      (secondsLeft <= 300) countdownEl.className = 'countdown danger';
+      if      (secondsLeft <= 0)   countdownEl.className = 'countdown danger';
+      else if (secondsLeft <= 300) countdownEl.className = 'countdown danger';
       else if (secondsLeft <= 600) countdownEl.className = 'countdown red';
       else                         countdownEl.className = 'countdown warning';
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        if (secondsLeft > 0) {
+          secondsLeft--;
+          renderCountdown();
+        } else {
+          clearInterval(timerInterval);
+          setStatus('YOU FAILED', 'nope');
+        }
+      }, 1000);
     }
 
     function pad(n) { return String(n).padStart(2, '0'); }
@@ -359,11 +369,7 @@
       clearInterval(timerInterval);
       secondsLeft = secs;
       renderCountdown();
-      timerInterval = setInterval(() => {
-        if (secondsLeft > 0) secondsLeft--;
-        renderCountdown();
-      }, 1000);
-      // Also reset status if a new timer is set
+      startTimer();
       setStatus('WAITING FOR CODE', '');
     }
 
